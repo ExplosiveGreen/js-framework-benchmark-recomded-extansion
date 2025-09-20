@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "JS Framework Benchmark - Recommended Filter",
+  "version": "1.0.0",
+  "description": "Adds a 'Recommended Frameworks' filter button to the JS Framework Benchmark website",
+  "permissions": [
+    "activeTab"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["*://krausest.github.io/js-framework-benchmark/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["recommended-frameworks.json"],
+      "matches": ["*://krausest.github.io/*"]
+    }
+  ]
+}
