@@ -96,16 +96,77 @@ function addRecommendedFrameworkButton() {
 
       // Add click functionality
       recommendedBtn.addEventListener('click', () => {
-        selectRecommendedFrameworks(checkList);
+        // Disable button immediately to prevent multiple clicks
+        recommendedBtn.disabled = true;
+        recommendedBtn.style.opacity = '0.6';
+        recommendedBtn.style.cursor = 'not-allowed';
+        
+        try {
+          // Inject script that does everything directly in page context
+          injectReactExplorationScript(checkList);
+          // Button stays disabled until other buttons are clicked
+          
+        } catch (error) {
+          console.error('Error selecting frameworks:', error);
+          
+          // Re-enable button immediately on error
+          recommendedBtn.disabled = false;
+          recommendedBtn.style.opacity = '1';
+          recommendedBtn.style.cursor = 'pointer';
+        }
       });
-
+      
       // Add the button to the container
       filterContainer.appendChild(recommendedBtn);
+      
+      // Set up monitoring for other filter buttons to re-enable this button
+      setupButtonMonitoring(recommendedBtn, span);
 
     });
 
   } catch (error) {
     console.error('Error adding recommended framework button:', error);
+  }
+}
+
+function setupButtonMonitoring(recommendedBtn, span) {
+  // Function to re-enable the recommended button
+  const reEnableRecommendedButton = () => {
+    recommendedBtn.disabled = false;
+    recommendedBtn.style.opacity = '1';
+    recommendedBtn.style.cursor = 'pointer';
+    span.textContent = 'Recommended';
+  };
+  
+  // Monitor clicks on filter buttons using event delegation
+  const filterContainer = document.getElementsByClassName('selector-content-container__actions')[0];
+  
+  if (filterContainer) {
+    // Add click listener to the container to catch all button clicks
+    filterContainer.addEventListener('click', (event) => {
+      const clickedButton = event.target.closest('button');
+      
+      if (clickedButton && clickedButton !== recommendedBtn) {
+        const buttonText = clickedButton.textContent.trim();
+        
+        // Check if it's one of the filter buttons (None, All, Unflagged)
+        if (buttonText === 'None' || buttonText === 'All' || buttonText === 'Unflagged') {
+          console.log('Filter button clicked:', buttonText, '- Re-enabling Recommended button');
+          reEnableRecommendedButton();
+        }
+      }
+    });
+  }
+  
+  // Also monitor for any checkbox changes that might indicate manual selection
+  const contentWrapper = document.getElementsByClassName('selector-content-container__content-wrapper')[0];
+  if (contentWrapper) {
+    contentWrapper.addEventListener('click', (event) => {
+      if (event.target.type === 'checkbox') {
+        console.log('Manual checkbox clicked - Re-enabling Recommended button');
+        reEnableRecommendedButton();
+      }
+    });
   }
 }
 
@@ -150,6 +211,30 @@ function selectOnlyRecommended(checkList) {
   } catch (error) {
     console.error('Error selecting only recommended frameworks:', error);
   }
+}
+
+function injectReactExplorationScript(checkList) {
+  // Check if script already exists
+  if (document.getElementById('react-state-helper')) {
+    // Script already exists, just trigger the selection
+    sessionStorage.setItem('targetFrameworks', JSON.stringify(checkList));
+    window.postMessage({ type: 'SELECT_FRAMEWORKS' }, '*');
+    return;
+  }
+  
+  // Store target frameworks in sessionStorage for the external script to access
+  sessionStorage.setItem('targetFrameworks', JSON.stringify(checkList));
+  
+  // Create script element that loads external file
+  const script = document.createElement('script');
+  script.id = 'react-state-helper';
+  script.src = chrome.runtime.getURL('react-explorer.js');
+  script.onload = function() {
+    console.log('React exploration script loaded and ready');
+  };
+  
+  document.head.appendChild(script);
+  console.log('React exploration script injected from external file');
 }
 
 // Listen for dynamic content changes

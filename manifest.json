@@ -15,7 +15,7 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["recommended-frameworks.json"],
+      "resources": ["recommended-frameworks.json", "react-explorer.js"],
       "matches": ["*://krausest.github.io/*"]
     }
   ]
